@@ -1,0 +1,14 @@
+{
+  "name": "validate-data",
+  "about": "验证plants.json和species.json的数据格式",
+  "title": "数据验证失败",
+  "labels": ["bug", "data"],
+  "body": [
+    {
+      "type": "markdown",
+      "attributes": {
+        "value": "数据验证脚本检测到格式错误。"
+      }
+    }
+  ]
+}

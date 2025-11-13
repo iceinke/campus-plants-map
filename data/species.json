@@ -1,0 +1,31 @@
+[
+  {
+    "name": "银杏树",
+    "icon": "images/yinxing.png",
+    "bloomStart": "3",
+    "bloomEnd": "4",
+    "leafStart": "10",
+    "leafEnd": "12",
+    "description": "常见落叶乔木，秋季黄叶",
+    "docPath": "data/plant-docs/银杏树.md"
+  },
+  {
+    "name": "樱花",
+    "icon": "images/sakura.png",
+    "bloomStart": "3",
+    "bloomEnd": "4",
+    "leafStart": "3",
+    "leafEnd": "6",
+    "description": "春季观赏花卉",
+    "docPath": "data/plant-docs/樱花.md"
+  },
+  {
+    "name": "梧桐",
+    "icon": "images/wutong.png",
+    "bloomStart": "",
+    "bloomEnd": "",
+    "leafStart": "11",
+    "leafEnd": "12",
+    "description": "常绿乔木，四季常青"
+  }
+]

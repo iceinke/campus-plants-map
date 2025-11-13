@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>校园植物地图</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 高德地图 API（替换 key 为你自己的） -->
+  <script src="https://webapi.amap.com/maps?v=2.0&key=e328c01e74fe05a203344606ee973e8d"></script>
+  <link rel="stylesheet" href="https://unpkg.com/normalize.css/normalize.css">
+  <style>
+    body { margin: 0; font-family: "Noto Sans SC", sans-serif; }
+    #map { width: 100%; height: 100vh; }
+    /* 统一InfoWindow样式 */
+    .amap-info-content { font-size: 14px; line-height: 1.6; }
+    .plant-info-window { 
+      padding: 8px 12px; 
+      min-width: 200px;
+      font-family: "Noto Sans SC", sans-serif;
+    }
+    .plant-info-window .plant-name { 
+      font-size: 16px; 
+      font-weight: 600; 
+      color: #333; 
+      margin-bottom: 6px;
+    }
+    .plant-info-window .plant-desc { 
+      font-size: 13px; 
+      color: #666; 
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+    .plant-info-window .button-group { 
+      display: flex; 
+      gap: 8px; 
+      margin-top: 10px;
+    }
+    .plant-info-window button { 
+      flex: 1;
+      padding: 6px 12px; 
+      border: none; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .plant-info-window button:hover { 
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    .plant-info-window .btn-detail { 
+      background: #2196F3; 
+      color: white; 
+    }
+    .plant-info-window .btn-detail:hover { 
+      background: #1976D2; 
+    }
+    .plant-info-window .btn-delete { 
+      background: #f44336; 
+      color: white; 
+    }
+    .plant-info-window .btn-delete:hover { 
+      background: #d32f2f; 
+    }
+    
+    /* Markdown内容样式 */
+    .markdown-content {
+      font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.8;
+      color: #333;
+      max-height: 60vh;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+    .markdown-content h1 {
+      font-size: 24px;
+      color: #2c3e50;
+      border-bottom: 2px solid #2196F3;
+      padding-bottom: 8px;
+      margin: 20px 0 16px 0;
+    }
+    .markdown-content h2 {
+      font-size: 20px;
+      color: #34495e;
+      margin: 18px 0 12px 0;
+      padding-left: 8px;
+      border-left: 4px solid #2196F3;
+    }
+    .markdown-content h3 {
+      font-size: 17px;
+      color: #4a5568;
+      margin: 16px 0 10px 0;
+    }
+    .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+      font-size: 15px;
+      color: #5a6c7d;
+      margin: 14px 0 8px 0;
+    }
+    .markdown-content p {
+      margin: 10px 0;
+      text-align: justify;
+    }
+    .markdown-content ul, .markdown-content ol {
+      margin: 10px 0;
+      padding-left: 24px;
+    }
+    .markdown-content li {
+      margin: 6px 0;
+    }
+    .markdown-content code {
+      background: #f5f7fa;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.9em;
+      color: #e83e8c;
+    }
+    .markdown-content pre {
+      background: #f5f7fa;
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .markdown-content pre code {
+      background: none;
+      padding: 0;
+      color: #333;
+    }
+    .markdown-content blockquote {
+      border-left: 4px solid #dfe2e5;
+      padding-left: 16px;
+      margin: 12px 0;
+      color: #6a737d;
+      font-style: italic;
+    }
+    .markdown-content a {
+      color: #2196F3;
+      text-decoration: none;
+    }
+    .markdown-content a:hover {
+      text-decoration: underline;
+    }
+    .markdown-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 12px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .markdown-content hr {
+      border: none;
+      border-top: 1px solid #e1e4e8;
+      margin: 20px 0;
+    }
+    .markdown-content strong {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+    .markdown-content em {
+      color: #5a6c7d;
+    }
+    /* 标签页样式 */
+    .tab-btn {
+      transition: all 0.3s;
+    }
+    .tab-btn:hover {
+      background: #f5f5f5;
+    }
+    /* 控制面板 */
+    .panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(255,255,255,0.95);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      width: 280px;
+      z-index: 1000;
+      font-size: 14px;
+    }
+    .panel h3 { margin: 0 0 8px 0; font-size: 16px; }
+    .panel label { display:block; margin:6px 0 4px; }
+    .panel input[type="text"], .panel textarea, .panel input[type="date"], .panel select { width:100%; box-sizing:border-box; padding:6px; }
+    .panel button { margin-top:8px; padding:8px 10px; width:100%; }
+    .small-row { display:flex; gap:8px; }
+    .small-row button { flex:1 }
+    /* 自定义地图上图标样式 */
+    .cp-marker img { width:28px; height:28px; object-fit:contain; pointer-events:none }
+  /* 避免拖动标注或预览时被浏览器选中/显示拖拽图像 */
+  .cp-marker img, #iconPreview { -webkit-user-drag: none; user-select: none; -webkit-user-select: none; }
+    /* 临时标注样式：加边框/半透明以区分已保存的标注 */
+    .cp-marker.temp img { opacity: 0.92; border: 3px dashed #00BCD4; border-radius:6px; box-sizing:border-box }
+  /* 月份条样式 */
+  .month-bar { display:flex; gap:1px; align-items:center; margin-top:6px }
+  .month-seg { flex:1; height:10px; background:#eee; border-radius:2px }
+  .month-seg.bloom { background:#ff8da1 }
+  .month-seg.leaf { background:#ffb74d }
+  .month-legend { font-size:12px; color:#666; margin-top:6px }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- 植物详情面板（右上角） -->
+  <div class="panel" id="detailPanel" style="top:12px;right:12px;left:auto;width:300px;display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h3 style="margin:0;">植物详情</h3>
+      <button id="closeDetailBtn" style="background:#f5f5f5;border:1px solid #ddd;padding:4px 8px;cursor:pointer;border-radius:4px;">✕</button>
+    </div>
+    <div id="detailContent">
+      <p style="color:#666;text-align:center;margin:20px 0;">选择地图上的植物查看详情</p>
+    </div>
+    <div id="detailActions" style="margin-top:12px;display:none;">
+      <div class="small-row">
+        <button id="editPlantBtn" style="background:#4CAF50;color:white;border:none;padding:8px;border-radius:4px;cursor:pointer;">编辑</button>
+        <button id="deletePlantBtn" style="background:#f44336;color:white;border:none;padding:8px;border-radius:4px;cursor:pointer;">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="controlPanel">
+    <!-- 添加植物区域标题 -->
+    <div id="addPlantHeader" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;" title="点击展开/收起">
+      <h3 style="margin:0;">添加植物</h3>
+      <span id="addPlantToggle" style="font-size:24px;font-weight:bold;color:#666;transition:transform 0.3s;">+</span>
+    </div>
+    
+    <!-- 添加植物折叠内容 -->
+    <div id="addPlantContent" style="display:none;margin-top:8px;">
+      <label for="plantName">名称（从列表选择或添加新物种）</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <select id="speciesSelect" style="flex:1">
+          <!-- 动态填充物种列表；最后一项为添加新物种 -->
+        </select>
+        <div style="display:flex;align-items:center;gap:8px">
+          <img id="iconPreview" draggable="false" src="images/tree.png" alt="icon" style="width:48px;height:48px;object-fit:contain;border-radius:6px;border:1px solid #ddd;" title="当前物种图标预览" />
+        </div>
+      </div>
+
+      <!-- 隐藏的新物种输入（当选择添加新物种时显示） -->
+      <div id="newSpeciesWrap" style="display:none;margin-top:6px;">
+        <input id="newSpeciesInput" type="text" placeholder="输入新物种名称" />
+        <label style="display:block;margin-top:6px">默认图标</label>
+        
+        <div class="small-row" style="margin-top:6px">
+          <div style="flex:1">
+            <label for="newBloomStart">开花开始（MM 或 MM-DD）</label>
+            <input id="newBloomStart" type="text" placeholder="03 或 03-01" />
+          </div>
+          <div style="flex:1">
+            <label for="newBloomEnd">开花结束（MM 或 MM-DD）</label>
+            <input id="newBloomEnd" type="text" placeholder="04 或 04-15" />
+          </div>
+        </div>
+        <div class="small-row" style="margin-top:6px">
+          <div style="flex:1">
+            <label for="newLeafStart">落叶开始（MM 或 MM-DD）</label>
+            <input id="newLeafStart" type="text" placeholder="10 或 10-01" />
+          </div>
+          <div style="flex:1">
+            <label for="newLeafEnd">落叶结束（MM 或 MM-DD）</label>
+            <input id="newLeafEnd" type="text" placeholder="12 或 12-01" />
+          </div>
+        </div>
+        <label style="display:block;margin-top:6px">描述</label>
+        <input id="newSpeciesDesc" type="text" placeholder="简短描述（可选）" />
+        <button id="addSpeciesBtn" style="margin-top:8px;">添加新物种并保存默认值</button>
+      </div>
+
+      <button id="placePointBtn">在地图上放置点</button>
+      <div class="small-row">
+        <button id="startAreaBtn">开始绘制区域</button>
+        <button id="finishAreaBtn" disabled>完成并保存区域</button>
+      </div>
+      <button id="clearTempBtn">取消/清除临时绘制</button>
+      <button id="toggleOverlaysBtn" style="background:#9C27B0;color:white;border:none;margin-top:8px;">👁️ 显示/隐藏标注</button>
+      <hr />
+      <button id="exportBtn">导出本地保存（console）</button>
+      <p style="font-size:12px;margin-top:8px;color:#666">注意：本雏形使用 localStorage 持久化，加载时也会读取 data/plants.json。</p>
+    </div>
+    
+    <hr style="margin:12px 0;" />
+    
+    <!-- 本地植物列表区域标题 -->
+    <div id="localListHeader" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;" title="点击展开/收起">
+      <h4 style="margin:0;">本地保存的植物</h4>
+      <span id="localListToggle" style="font-size:16px;font-weight:bold;color:#666;transition:transform 0.3s;">▼</span>
+    </div>
+    
+    <!-- 本地植物列表折叠内容（默认收起） -->
+    <div id="localListContent" style="display:none;margin-top:8px;">
+      <div id="localList" style="max-height:400px;overflow:auto;font-size:13px"></div>
+    </div>
+  </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/markdown-viewer.js"></script>
+    <script src="js/submission.js"></script>
+</body>
+</html>

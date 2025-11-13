@@ -1,0 +1,79 @@
+name: 数据验证
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'data/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'data/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: 设置Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: 验证JSON格式
+      run: |
+        echo "验证 plants.json 格式..."
+        node -e "JSON.parse(require('fs').readFileSync('data/plants.json', 'utf8'))"
+        echo "✓ plants.json 格式正确"
+        
+        echo "验证 species.json 格式..."
+        node -e "JSON.parse(require('fs').readFileSync('data/species.json', 'utf8'))"
+        echo "✓ species.json 格式正确"
+    
+    - name: 验证数据结构
+      run: |
+        node -e "
+        const plants = JSON.parse(require('fs').readFileSync('data/plants.json', 'utf8'));
+        const species = JSON.parse(require('fs').readFileSync('data/species.json', 'utf8'));
+        
+        // 验证 plants 数据
+        if (!Array.isArray(plants)) {
+          throw new Error('plants.json 必须是数组');
+        }
+        
+        plants.forEach((plant, index) => {
+          if (!plant.name) {
+            throw new Error(\`植物 #\${index} 缺少 name 字段\`);
+          }
+          if (!plant.type || !['point', 'area'].includes(plant.type)) {
+            throw new Error(\`植物 #\${index} 的 type 字段无效\`);
+          }
+          if (plant.type === 'point' && !plant.position) {
+            throw new Error(\`单株植物 #\${index} 缺少 position 字段\`);
+          }
+          if (plant.type === 'area' && (!plant.path || plant.path.length < 3)) {
+            throw new Error(\`区域植物 #\${index} 的 path 字段无效（至少需要3个点）\`);
+          }
+        });
+        
+        // 验证 species 数据
+        if (!Array.isArray(species)) {
+          throw new Error('species.json 必须是数组');
+        }
+        
+        species.forEach((s, index) => {
+          if (!s.name) {
+            throw new Error(\`物种 #\${index} 缺少 name 字段\`);
+          }
+        });
+        
+        console.log('✓ 数据结构验证通过');
+        console.log(\`- 共 \${plants.length} 个植物\`);
+        console.log(\`- 共 \${species.length} 个物种\`);
+        "
+    
+    - name: 验证通过
+      if: success()
+      run: echo "🎉 所有验证通过！"
